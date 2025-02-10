@@ -32,7 +32,7 @@ class MQTrackerDetector:
 
         self.device = "cuda" if torch.cuda.is_available() else "cpu"  # Check if CUDA is available
         self.model = YOLO(self.model_path).to(self.device)
-        self.tracker = DeepSort(max_age=60, n_init=2, embedder="mobilenet", half=True, max_iou_distance=0.5, embedded_gpu=True)
+        self.tracker = DeepSort(max_age=60, n_init=2, embedder="mobilenet", half=True, max_iou_distance=0.5)
         self.reported_tracks = set()
 
         self.connection, self.channel = self.create_rabbitmq_connection()
