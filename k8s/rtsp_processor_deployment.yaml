@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rtsp-processor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rtsp-processor
+  template:
+    metadata:
+      labels:
+        app: rtsp-processor
+    spec:
+      containers:
+        - name: rtsp-processor
+          image: your-dockerhub/rtsp-processor:latest
+          env:
+            - name: RABBITMQ_HOST
+              value: "rabbitmq"
+            - name: RABBITMQ_QUEUE
+              value: "rtsp-frames"
