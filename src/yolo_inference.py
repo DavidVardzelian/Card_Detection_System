@@ -13,6 +13,7 @@ from card_mapper import get_card_name, get_barcode_from_card_id
 from typing import List, Tuple, Optional
 import sqlite3
 import signal
+import torch
 
 logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(message)s")
 
@@ -29,9 +30,9 @@ class MQTrackerDetector:
         self.confidence_threshold = config.get("confidence_threshold", 0.94)
         self.model_path = config.get("model_path", "models/best.pt")
 
-        self.device = "cpu"
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"  # Check if CUDA is available
         self.model = YOLO(self.model_path).to(self.device)
-        self.tracker = DeepSort(max_age=60, n_init=2, embedder="mobilenet", half=True, max_iou_distance=0.5)
+        self.tracker = DeepSort(max_age=60, n_init=2, embedder="mobilenet", half=True, max_iou_distance=0.5, embedded_gpu=True)
         self.reported_tracks = set()
 
         self.connection, self.channel = self.create_rabbitmq_connection()
