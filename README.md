@@ -163,5 +163,5 @@ rtsp-card-detection/
 
 ## **Contributors**
 👨‍💻 **David Vardzelian** – 
-📧 Contact: [your.email@example.com](mailto:david.vardzelian@gmail.com)  
+📧 Contact: [david.vardzelian@gmail.com](mailto:david.vardzelian@gmail.com)  
 
