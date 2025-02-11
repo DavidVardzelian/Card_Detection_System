@@ -1,8 +1,7 @@
 rabbitmq_host: "rabbitmq"
 rabbitmq_user: "admin"
 rabbitmq_pass: "admin"
-rabbitmq_exchange: "rtsp_exchange"
-rabbitmq_queue_rtsp: "rtsp-frames"
 rabbitmq_queue_yolo: "yolo-detections"
 confidence_threshold: 0.9
 model_path: "models/best.pt"
+retry_delay: 15

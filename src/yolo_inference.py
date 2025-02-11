@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
 import os
-import time
 import cv2
 import pika
 import yaml
+import time
 import json
+import torch
+import signal
 import logging
+import sqlite3
 import numpy as np
 from ultralytics import YOLO
+from typing import List, Tuple, Optional
 from deep_sort_realtime.deepsort_tracker import DeepSort
 from card_mapper import get_card_name, get_barcode_from_card_id
-from typing import List, Tuple, Optional
-import sqlite3
-import signal
-import torch
 
 logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(message)s")
 
@@ -27,10 +27,10 @@ class MQTrackerDetector:
         self.rabbitmq_pass = config.get("rabbitmq_pass", "admin")
         self.queue_out = config.get("rabbitmq_queue_yolo", "yolo-detections")
 
-        self.confidence_threshold = config.get("confidence_threshold", 0.94)
+        self.confidence_threshold = config.get("confidence_threshold", 0.9)
         self.model_path = config.get("model_path", "models/best.pt")
 
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"  # Check if CUDA is available
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"  
         self.model = YOLO(self.model_path).to(self.device)
         self.tracker = DeepSort(max_age=60, n_init=2, embedder="mobilenet", half=True, max_iou_distance=0.5)
         self.reported_tracks = set()
@@ -41,7 +41,7 @@ class MQTrackerDetector:
         self.stream_url = None
         self.table_id = None
         self.publish_count = 0
-        self.retry_delay = config.get("retry_delay", 30)  # Add retry delay configuration
+        self.retry_delay = config.get("retry_delay", 30)  
 
         # Register shutdown hook
         signal.signal(signal.SIGTERM, self.shutdown)
