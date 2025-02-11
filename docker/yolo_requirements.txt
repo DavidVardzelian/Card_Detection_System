@@ -1,8 +1,0 @@
-torch
-torchvision
-ultralytics
-numpy
-opencv-python
-PyYAML
-pika
-deep_sort_realtime
