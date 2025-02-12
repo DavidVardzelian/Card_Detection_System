@@ -142,7 +142,8 @@ class MQTrackerDetector:
             logging.error("Error processing frame: %s", e, exc_info=True)
 
     def process_stream(self) -> None:
-        cap = cv2.VideoCapture(self.stream_url)
+        os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp"
+        cap = cv2.VideoCapture(self.stream_url, cv2.CAP_FFMPEG)
         frame_count = 0
         while cap.isOpened():
             ret, frame = cap.read()
