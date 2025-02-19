@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import os
 import cv2
-import pika
 import yaml
 import time
 import json
@@ -9,6 +8,7 @@ import torch
 import signal
 import logging
 import sqlite3
+import requests
 import numpy as np
 from ultralytics import YOLO
 from typing import List, Tuple, Optional
@@ -17,16 +17,12 @@ from card_mapper import get_card_name, get_barcode_from_card_id
 
 logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(message)s")
 
-class MQTrackerDetector:
+class HTTPTrackerDetector:
     def __init__(self, config_path: str = "config/settings.yaml") -> None:
         with open(config_path, "r") as file:
             config = yaml.safe_load(file)
 
-        self.rabbitmq_host = config.get("rabbitmq_host", "rabbitmq")
-        self.rabbitmq_user = config.get("rabbitmq_user", "admin")
-        self.rabbitmq_pass = config.get("rabbitmq_pass", "admin")
-        self.queue_out = config.get("rabbitmq_queue_yolo", "yolo-detections")
-
+        self.http_endpoint = config.get("http_endpoint", "http://localhost:8111/")
         self.confidence_threshold = config.get("confidence_threshold", 0.9)
         self.model_path = config.get("model_path", "models/best.pt")
 
@@ -34,8 +30,6 @@ class MQTrackerDetector:
         self.model = YOLO(self.model_path).to(self.device)
         self.tracker = DeepSort(max_age=60, n_init=2, embedder="mobilenet", half=True, max_iou_distance=0.5)
         self.reported_tracks = set()
-
-        self.connection, self.channel = self.create_rabbitmq_connection()
 
         self.stream_id = None
         self.stream_url = None
@@ -46,12 +40,6 @@ class MQTrackerDetector:
         # Register shutdown hook
         signal.signal(signal.SIGTERM, self.shutdown)
         signal.signal(signal.SIGINT, self.shutdown)
-
-    def create_rabbitmq_connection(self):
-        credentials = pika.PlainCredentials(self.rabbitmq_user, self.rabbitmq_pass)
-        connection = pika.BlockingConnection(pika.ConnectionParameters(host=self.rabbitmq_host, credentials=credentials))
-        channel = connection.channel()
-        return connection, channel
 
     def perform_detection(self, frame: np.ndarray) -> List[Tuple[List[float], float, int]]:
         results = self.model(frame, imgsz=640, verbose=False, conf=self.confidence_threshold)
@@ -133,11 +121,12 @@ class MQTrackerDetector:
                     "detections": new_tracks,
                 }
                 result_json = json.dumps(result_msg)
-                queue_name = f"{self.queue_out}_{self.table_id}"
-                self.channel.queue_declare(queue=queue_name)
-                self.channel.basic_publish(exchange='', routing_key=queue_name, body=result_json)
-                self.publish_count += 1
-                logging.info(f"Published detection results to queue {queue_name}. Total published: {self.publish_count}")
+                response = requests.post(self.http_endpoint, data=result_json, headers={'Content-Type': 'application/json'})
+                if response.status_code == 200:
+                    self.publish_count += 1
+                    logging.info(f"Published detection results to {self.http_endpoint}. Total published: {self.publish_count}")
+                else:
+                    logging.error(f"Failed to publish detection results: {response.status_code} {response.text}")
         except Exception as e:
             logging.error("Error processing frame: %s", e, exc_info=True)
 
@@ -145,15 +134,20 @@ class MQTrackerDetector:
         os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp"
         cap = cv2.VideoCapture(self.stream_url, cv2.CAP_FFMPEG)
         frame_count = 0
-        while cap.isOpened():
-            ret, frame = cap.read()
-            if not ret:
-                break
-            frame_count += 1
-            if frame_count % 3 == 0:
-                logging.info("frame processsed")
-                self.process_frame(frame)
-        cap.release()
+        try:
+            while cap.isOpened():
+                ret, frame = cap.read()
+                if not ret:
+                    break
+                frame_count += 1
+                if frame_count % 3 == 0:
+                    logging.info("frame processed")
+                    self.process_frame(frame)
+        except Exception as e:
+            logging.error("Error processing stream: %s", e, exc_info=True)
+        finally:
+            cap.release()
+            self.reset_picked()
 
     def worker(self) -> None:
         while True:
@@ -195,15 +189,14 @@ class MQTrackerDetector:
     def shutdown(self, signum, frame) -> None:
         logging.info("Shutting down...")
         self.reset_picked()
-        self.connection.close()
         exit(0)
 
     def run(self) -> None:
-        logging.info("MQTrackerDetector: Waiting for streams...")
+        logging.info("HTTPTrackerDetector: Waiting for streams...")
         self.worker()
 
 def main() -> None:
-    detector = MQTrackerDetector()
+    detector = HTTPTrackerDetector()
     detector.run()
 
 if __name__ == "__main__":

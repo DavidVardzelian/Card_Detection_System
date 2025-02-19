@@ -9,33 +9,11 @@ services:
       - streams-db:/app/config
       - ./models:/app/models
       - ./TestVideos/:/app/Videos/
-    environment:
-      - RABBITMQ_HOST=rabbitmq
-      - RABBITMQ_QUEUE=yolo-detections
     networks:
       - detector-network
     depends_on:
-      rabbitmq:
-        condition: service_healthy
       db:
         condition: service_started
-
-  rabbitmq:
-    image: "rabbitmq:3-management"
-    container_name: rabbitmq
-    ports:
-      - "5672:5672"
-      - "15672:15672"
-    environment:
-      - RABBITMQ_DEFAULT_USER=admin
-      - RABBITMQ_DEFAULT_PASS=admin
-    healthcheck:
-      test: ["CMD", "rabbitmqctl", "status"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    networks:
-      - detector-network
 
   db:
     build:
