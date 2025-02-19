@@ -22,7 +22,7 @@ class HTTPTrackerDetector:
         with open(config_path, "r") as file:
             config = yaml.safe_load(file)
 
-        self.http_endpoint = config.get("http_endpoint", "http://localhost:8111/")
+        self.http_endpoint = config.get("http_endpoint", "http://host.docker.internal:8111")
         self.confidence_threshold = config.get("confidence_threshold", 0.9)
         self.model_path = config.get("model_path", "models/best.pt")
 

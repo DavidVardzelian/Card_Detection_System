@@ -1,5 +1,5 @@
 rabbitmq_queue_yolo: "yolo-detections"
-http_endpoint: "http://localhost:8111/"
+http_endpoint: "http://host.docker.internal:8111"
 confidence_threshold: 0.9
 model_path: "models/best.pt"
 retry_delay: 15
