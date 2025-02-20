@@ -120,13 +120,14 @@ class HTTPTrackerDetector:
                     "tableId": self.table_id,
                     "detections": new_tracks,
                 }
-                result_json = json.dumps(result_msg)
-                response = requests.post(self.http_endpoint, data=result_json, headers={'Content-Type': 'application/json'})
-                if response.status_code == 200:
-                    self.publish_count += 1
-                    logging.info(f"Published detection results to {self.http_endpoint}. Total published: {self.publish_count}")
-                else:
-                    logging.error(f"Failed to publish detection results: {response.status_code} {response.text}")
+                for track in new_tracks:
+                    card_num = track["barcode"]
+                    response = requests.get(f"{self.http_endpoint}?CardNum={card_num}")
+                    if response.status_code == 200:
+                        self.publish_count += 1
+                        logging.info(f"Published detection results to {self.http_endpoint}. Total published: {self.publish_count}")
+                    else:
+                        logging.error(f"Failed to publish detection results: {response.status_code} {response.text}")
         except Exception as e:
             logging.error("Error processing frame: %s", e, exc_info=True)
 
@@ -147,7 +148,8 @@ class HTTPTrackerDetector:
             logging.error("Error processing stream: %s", e, exc_info=True)
         finally:
             cap.release()
-            self.reset_picked()
+            #enable resetting when using RTSP
+            #self.reset_picked()
 
     def worker(self) -> None:
         while True:
