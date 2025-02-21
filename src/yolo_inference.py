@@ -22,7 +22,6 @@ class HTTPTrackerDetector:
         with open(config_path, "r") as file:
             config = yaml.safe_load(file)
 
-        self.http_endpoint = config.get("http_endpoint", "http://host.docker.internal:8111")
         self.confidence_threshold = config.get("confidence_threshold", 0.9)
         self.model_path = config.get("model_path", "models/best.pt")
 
@@ -33,7 +32,7 @@ class HTTPTrackerDetector:
 
         self.stream_id = None
         self.stream_url = None
-        self.table_id = None
+        self.card_proxy_ip = None
         self.publish_count = 0
         self.retry_delay = config.get("retry_delay", 30)  
 
@@ -117,15 +116,15 @@ class HTTPTrackerDetector:
             if new_tracks:
                 result_msg = {
                     "stream_id": self.stream_id,
-                    "tableId": self.table_id,
+                    "card_proxy_ip": self.card_proxy_ip,
                     "detections": new_tracks,
                 }
                 for track in new_tracks:
                     card_num = track["barcode"]
-                    response = requests.get(f"{self.http_endpoint}?CardNum={card_num}")
+                    response = requests.get(f"{self.card_proxy_ip}?CardNum={card_num}")
                     if response.status_code == 200:
                         self.publish_count += 1
-                        logging.info(f"Published detection results to {self.http_endpoint}. Total published: {self.publish_count}")
+                        logging.info(f"Published detection results to {self.card_proxy_ip}. Total published: {self.publish_count}")
                     else:
                         logging.error(f"Failed to publish detection results: {response.status_code} {response.text}")
         except Exception as e:
@@ -155,7 +154,7 @@ class HTTPTrackerDetector:
         while True:
             stream_info = self.pick_stream()
             if stream_info:
-                self.stream_id, self.stream_url, self.table_id = stream_info
+                self.stream_id, self.stream_url, self.card_proxy_ip = stream_info
                 self.process_stream()
             else:
                 logging.info(f"No available streams to process. Retrying in {self.retry_delay} seconds...")
@@ -166,25 +165,25 @@ class HTTPTrackerDetector:
             conn = sqlite3.connect('config/streams.db')
             cursor = conn.cursor()
             cursor.execute("BEGIN IMMEDIATE")
-            cursor.execute("SELECT id, url, tableId FROM streams WHERE picked_for_yolo = 0 LIMIT 1")
+            cursor.execute("SELECT id, url, card_proxy_ip FROM streams WHERE picked_for_yolo = 0 LIMIT 1")
             stream = cursor.fetchone()
             if stream:
-                stream_id, stream_url, table_id = stream
-                cursor.execute("UPDATE streams SET picked_for_yolo = 1 WHERE tableId = ?", (table_id,))
+                stream_id, stream_url, card_proxy_ip = stream
+                cursor.execute("UPDATE streams SET picked_for_yolo = 1 WHERE card_proxy_ip = ?", (card_proxy_ip,))
                 conn.commit()
                 conn.close()
-                logging.info(f"Picked stream: id={stream_id}, url={stream_url}, tableId={table_id}")
-                return stream_id, stream_url, table_id
+                logging.info(f"Picked stream: id={stream_id}, url={stream_url}, card_proxy_ip={card_proxy_ip}")
+                return stream_id, stream_url, card_proxy_ip
             conn.rollback()
             conn.close()
             logging.info(f"No available streams to pick. Retrying in {self.retry_delay} seconds...")
             time.sleep(self.retry_delay)
 
     def reset_picked(self) -> None:
-        if self.table_id:
+        if self.card_proxy_ip:
             conn = sqlite3.connect('config/streams.db')
             cursor = conn.cursor()
-            cursor.execute("UPDATE streams SET picked_for_yolo = 0 WHERE tableId = ?", (self.table_id,))
+            cursor.execute("UPDATE streams SET picked_for_yolo = 0 WHERE card_proxy_ip = ?", (self.card_proxy_ip,))
             conn.commit()
             conn.close()
 

@@ -6,21 +6,32 @@
     <title>RTSP Stream Manager</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background-color: #121212;
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
             color: #e0e0e0;
             margin: 0;
             padding: 0;
             display: flex;
             flex-direction: column;
             align-items: center;
+            animation: fadeIn 1s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
         h1 {
             color: #ffffff;
             margin-top: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
         }
         form {
             margin-bottom: 20px;
+            animation: slideIn 1s ease-in-out;
+        }
+        @keyframes slideIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
         }
         input[type="text"] {
             padding: 10px;
@@ -30,6 +41,11 @@
             background-color: #333;
             color: #e0e0e0;
             width: 300px;
+            transition: background-color 0.3s, box-shadow 0.3s;
+        }
+        input[type="text"]:focus {
+            background-color: #444;
+            box-shadow: 0 0 10px #007bff;
         }
         button {
             padding: 10px 20px;
@@ -40,6 +56,7 @@
             color: white;
             cursor: pointer;
             box-shadow: 0 0 10px #007bff;
+            transition: background-color 0.3s, box-shadow 0.3s;
         }
         button:hover {
             background-color: #0056b3;
@@ -48,6 +65,8 @@
         ul {
             list-style-type: none;
             padding: 0;
+            width: 100%;
+            max-width: 600px;
         }
         li {
             background-color: #1e1e1e;
@@ -58,6 +77,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            animation: fadeIn 1s ease-in-out;
         }
         .update-form {
             display: flex;
@@ -66,6 +86,7 @@
         .delete-btn {
             background-color: #dc3545;
             box-shadow: 0 0 10px #dc3545;
+            transition: background-color 0.3s, box-shadow 0.3s;
         }
         .delete-btn:hover {
             background-color: #c82333;
@@ -77,7 +98,7 @@
     <h1>RTSP Stream Manager</h1>
     <form id="add-form">
         <input type="text" name="url" placeholder="RTSP URL" required>
-        <input type="text" name="tableId" placeholder="Table ID">
+        <input type="text" name="card_proxy_ip" placeholder="Card Proxy IP">
         <button type="submit">Add Stream</button>
     </form>
     <ul id="stream-list">
@@ -85,7 +106,7 @@
         <li>
             <form class="update-form" data-id="{{ stream.id }}">
                 <input type="text" name="url" value="{{ stream.url }}" required>
-               <input type="text" name="tableId" value="{{ stream.tableId }}">
+                <input type="text" name="card_proxy_ip" value="{{ stream.card_proxy_ip }}">
                 <button type="submit">Update</button>
                 <button type="button" class="delete-btn" data-id="{{ stream.id }}">Delete</button>
             </form>

@@ -18,9 +18,9 @@ def index():
 @app.route('/add', methods=['POST'])
 def add_stream():
     url = request.form['url']
-    table_id = request.form['tableId']
+    card_proxy_ip = request.form['card_proxy_ip']
     conn = get_db_connection()
-    conn.execute('INSERT INTO streams (url, tableId) VALUES (?, ?)', (url, table_id))
+    conn.execute('INSERT INTO streams (url, card_proxy_ip) VALUES (?, ?)', (url, card_proxy_ip))
     conn.commit()
     conn.close()
     return jsonify({'status': 'success'})
@@ -28,9 +28,9 @@ def add_stream():
 @app.route('/update/<int:id>', methods=['POST'])
 def update_stream(id):
     url = request.form['url']
-    table_id = request.form['tableId']
+    card_proxy_ip = request.form['card_proxy_ip']
     conn = get_db_connection()
-    conn.execute('UPDATE streams SET url = ?, tableId = ? WHERE id = ?', (url, table_id, id))
+    conn.execute('UPDATE streams SET url = ?, card_proxy_ip = ? WHERE id = ?', (url, card_proxy_ip, id))
     conn.commit()
     conn.close()
     return jsonify({'status': 'success'})

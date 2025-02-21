@@ -7,7 +7,7 @@ def init_db():
         CREATE TABLE IF NOT EXISTS streams (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             url TEXT NOT NULL,
-            tableId TEXT,
+            card_proxy_ip TEXT,
             picked_for_yolo BOOLEAN NOT NULL DEFAULT 0
         )
     ''')
